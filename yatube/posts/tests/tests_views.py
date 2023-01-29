@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -25,7 +26,6 @@ class PostPagesTest(TestCase):
         )
 
     def setUp(self):
-        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client_author = Client()
         self.authorized_client_author.force_login(self.user)
@@ -58,13 +58,17 @@ class PostPagesTest(TestCase):
         post_author_0 = first_object.author
         post_text_0 = first_object.text
         post_id_0 = first_object.pk
+        post_group_id_0 = first_object.group.pk
+        post_author_pk_0 = first_object.author.pk
         self.assertEqual(post_author_0, self.user)
-        self.assertEqual(post_text_0, 'Тестовый пост')
+        self.assertEqual(post_text_0, self.post.text)
         self.assertEqual(post_id_0, self.post.pk)
+        self.assertEqual(post_group_id_0, self.group.pk)
+        self.assertEqual(post_author_pk_0, self.user.pk)
 
     def test_index_page_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
-        response = self.guest_client.get(reverse('posts:index'))
+        response = self.client.get(reverse('posts:index'))
         self.check_fields(response)
 
     def test_group_list_page_show_correct_context(self):
@@ -136,8 +140,9 @@ class PostPagesTest(TestCase):
 
 
 class PaginatorViewsTest(TestCase):
+    NUM_CREATE_POSTS = 13
+
     def setUp(self):
-        self.guest_client = Client()
         self.user = User.objects.create_user(username='HasNoName')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
@@ -146,7 +151,7 @@ class PaginatorViewsTest(TestCase):
             slug='test-slug',
             description='Тестовое описание',
         )
-        for i in range(13):
+        for i in range(self.NUM_CREATE_POSTS):
             Post.objects.create(
                 text=f'Тестовый пост {i}',
                 group=self.group,
@@ -164,15 +169,16 @@ class PaginatorViewsTest(TestCase):
                 response = self.client.get(reverse(
                     reverse_name, kwargs=kwargs))
                 self.assertEqual(
-                    len(response.context['page_obj']), 10,
+                    len(response.context['page_obj']), settings.POST_ON_PAGE,
                     f'На странице {reverse_name} ошибка пагинатора')
 
     def test_second_page_contains_three_records(self):
         """Пагинатор выводит на второй странице 3 поста"""
+        remaining_pages = self.NUM_CREATE_POSTS - settings.POST_ON_PAGE
         for reverse_name, kwargs in self.pages.items():
             with self.subTest(reverse_name=reverse_name, kwargs=kwargs):
                 response = self.client.get(reverse(
                     reverse_name, kwargs=kwargs) + '?page=2')
                 self.assertEqual(
-                    len(response.context['page_obj']), 3,
+                    len(response.context['page_obj']), remaining_pages,
                     f'На странице {reverse_name} ошибка пагинатора')

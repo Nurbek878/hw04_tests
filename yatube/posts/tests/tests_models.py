@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
@@ -26,7 +27,8 @@ class PostModelTest(TestCase):
         group = PostModelTest.group
         post = PostModelTest.post
         expected_object_name_group_title = group.title
-        expected_object_name_post_text = post.text[:15]
+        expected_object_name_post_text = post.text[
+            :settings.NUMBER_SYMBOL_POST]
         self.assertEqual(expected_object_name_group_title, str(group))
         self.assertEqual(expected_object_name_post_text, str(post))
 
