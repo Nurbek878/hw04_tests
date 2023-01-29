@@ -29,7 +29,7 @@ class PostCreateFormTests(TestCase):
     def test_create_post(self):
         post_count = Post.objects.count()
         form_data = {
-            'text': self.post.text,
+            'text': 'Новый пост',
             'group': self.group.pk,
         }
         response = self.authorized_client_author.post(
@@ -43,7 +43,7 @@ class PostCreateFormTests(TestCase):
         self.assertEqual(Post.objects.count(), post_count + 1)
         self.assertTrue(
             Post.objects.filter(
-                text=self.post.text,
+                text=form_data['text'],
                 group=self.group.pk
             ).exists()
         )
